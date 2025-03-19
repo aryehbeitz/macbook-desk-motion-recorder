@@ -2,11 +2,12 @@
 
 WATCH_DIR="$HOME/Desktop/security"
 mkdir -p "$WATCH_DIR"
+mkdir -p "$WATCH_DIR/.tmp"
 
-PREV_IMG="$WATCH_DIR/prev.jpg"
-PREV_IMG_2="$WATCH_DIR/prev_2.jpg"
-PREV_IMG_3="$WATCH_DIR/prev_3.jpg"
-CURR_IMG="$WATCH_DIR/curr.jpg"
+PREV_IMG="$WATCH_DIR/.tmp/prev.jpg"
+PREV_IMG_2="$WATCH_DIR/.tmp/prev_2.jpg"
+PREV_IMG_3="$WATCH_DIR/.tmp/prev_3.jpg"
+CURR_IMG="$WATCH_DIR/.tmp/curr.jpg"
 
 # The minimum percentage of changed pixels required to trigger a recording.
 # - Too many false positives? Increase PIXEL_CHANGE_THRESHOLD (e.g., 0.6 or 1.0).
@@ -19,7 +20,7 @@ FRAME_CAPTURE_OPTIONS="-f avfoundation -video_size 1920x1440 -framerate 30 -pixe
 # Function to clean up on exit
 cleanup() {
     echo "[INFO] Cleaning up temporary files..."
-    rm -f "$PREV_IMG" "$PREV_IMG_2" "$PREV_IMG_3" "$CURR_IMG"
+    rm -rf "$WATCH_DIR/.tmp"
     echo "[INFO] Stopping motion detection."
     exit 0
 }

@@ -74,9 +74,14 @@ Example:
 
 ```
 security/
+├── .tmp/                    # Temporary files (automatically cleaned up)
+│   ├── prev.jpg
+│   ├── prev_2.jpg
+│   ├── prev_3.jpg
+│   └── curr.jpg
 ├── 2025_03_19_10_08_09-39_recording.mov
 ├── 2025_03_19_10_08_09_trigger_prev.jpg
-├── 2025_03_19_10_08_09_trigger_curr.jpg
+└── 2025_03_19_10_08_09_trigger_curr.jpg
 ```
 
 - `-39_recording.mov` → The recorded video (39 is the end second of the recording).
@@ -84,6 +89,8 @@ security/
 - `trigger_prev.jpg` → The image just before motion was detected.
 
 - `trigger_curr.jpg` → The image when motion was detected.
+
+- `.tmp/` → Directory containing temporary files used for motion detection. These files are automatically cleaned up when the script exits.
 
 This ensures **videos and trigger images are ordered together** for easy review.
 
