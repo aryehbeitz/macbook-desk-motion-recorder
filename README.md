@@ -38,7 +38,7 @@ cd macbook-desk-motion-recorder
 ### **3. Make Scripts Executable**
 
 ```sh
-chmod +x watch.sh record_video.sh
+chmod +x watch.sh record_video.sh clean.sh
 ```
 
 ---
@@ -69,6 +69,21 @@ Press `Ctrl+C` in the terminal, or run:
 pkill -f watch.sh
 pkill -f record_video.sh
 ```
+
+### **Clean Recordings**
+
+To remove all recordings and difference images:
+
+```sh
+./clean.sh
+```
+
+This will:
+
+- Show how many recordings will be deleted
+- Ask for confirmation before proceeding
+- Clean all recordings while preserving the directory structure
+- Clean temporary files in the `.tmp` directory
 
 ---
 
