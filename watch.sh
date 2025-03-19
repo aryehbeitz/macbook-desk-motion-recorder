@@ -48,21 +48,35 @@ while true; do
 
     # Compute pixel difference using ImageMagick
     DIFF_PIXELS=$(magick compare -metric AE "$PREV_IMG" "$CURR_IMG" null: 2>&1 | awk '{print $1}')
+    
+    # Ensure DIFF_PIXELS is a valid number
+    if ! [[ "$DIFF_PIXELS" =~ ^[0-9]+$ ]]; then
+        echo "[ERROR] Invalid DIFF_PIXELS value ($DIFF_PIXELS). Skipping frame..."
+        sleep 1
+        continue
+    fi
 
     # Compute total image pixels
     WIDTH=$(magick identify -format "%w" "$CURR_IMG")
     HEIGHT=$(magick identify -format "%h" "$CURR_IMG")
     TOTAL_PIXELS=$((WIDTH * HEIGHT))
 
-    # Avoid division by zero
-    if [ "$TOTAL_PIXELS" -eq 0 ]; then
-        echo "[ERROR] Failed to compute image size. Skipping frame..."
+    # Ensure TOTAL_PIXELS is a valid number and greater than zero
+    if ! [[ "$TOTAL_PIXELS" =~ ^[0-9]+$ ]] || [ "$TOTAL_PIXELS" -eq 0 ]; then
+        echo "[ERROR] Invalid TOTAL_PIXELS value ($TOTAL_PIXELS). Skipping frame..."
         sleep 1
         continue
     fi
 
     # Compute the percentage of changed pixels
     DIFF_PERCENT=$(awk "BEGIN { printf \"%.2f\", ($DIFF_PIXELS / $TOTAL_PIXELS) * 100 }")
+
+    # Ensure DIFF_PERCENT is within a reasonable range (0% - 100%)
+    if (( $(echo "$DIFF_PERCENT > 100" | bc -l) )); then
+        echo "[ERROR] DIFF_PERCENT ($DIFF_PERCENT%) is unrealistic. Skipping frame..."
+        sleep 1
+        continue
+    fi
 
     if (( $(echo "$DIFF_PERCENT > $PIXEL_CHANGE_THRESHOLD" | bc -l) )); then
         TIMESTAMP=$(date +"%Y_%m_%d_%H_%M_%S")
