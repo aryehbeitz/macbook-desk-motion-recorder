@@ -17,6 +17,33 @@ PIXEL_CHANGE_THRESHOLD=0.4
 DESK_CAM_INDEX="1"  # Desk View Camera
 FRAME_CAPTURE_OPTIONS="-f avfoundation -video_size 1920x1440 -framerate 30 -pixel_format uyvy422 -i $DESK_CAM_INDEX -frames:v 1"
 
+# Function to display images in terminal
+show_image() {
+    local image_path="$1"
+    if [ -n "$KITTY_WINDOW_ID" ]; then
+        # Kitty terminal
+        printf '\033_Ga=T,f=100,i=1;%s\033\\' "$(base64 -i "$image_path")"
+    elif [ -n "$ITERM_PROFILE" ]; then
+        # iTerm2
+        printf '\033]1337;File=inline=1:%s\a' "$(base64 -i "$image_path")"
+    else
+        # Fallback to ASCII art using ImageMagick
+        convert "$image_path" -resize 80x40 -colorspace gray -format txt:- | \
+            sed -n 's/^.*(\([0-9,]*\))$/\1/p' | \
+            tr -d ',' | \
+            awk '{printf "%c", int($1/255*93+32)}'
+    fi
+}
+
+# Function to clear terminal
+clear_terminal() {
+    if [ -n "$KITTY_WINDOW_ID" ] || [ -n "$ITERM_PROFILE" ]; then
+        clear
+    else
+        echo -e "\033[2J\033[H"
+    fi
+}
+
 # Function to clean up on exit
 cleanup() {
     echo "[INFO] Cleaning up temporary files..."
@@ -109,7 +136,16 @@ while true; do
 
         echo "[ALERT] Movement detected! Diff Level: $DIFF_PERCENT%"
         echo "[INFO] Saving diff image: $DIFF_IMAGE"
-        echo "[INFO] Starting recording..."
+
+        # Show the images in terminal
+        clear_terminal
+        echo "Previous Frame:"
+        show_image "$PREV_IMG"
+        echo -e "\nCurrent Frame:"
+        show_image "$CURR_IMG"
+        echo -e "\nDifference (red highlights changes):"
+        show_image "$DIFF_IMAGE"
+        echo -e "\n[INFO] Starting recording..."
 
         ./record_video.sh "$TIMESTAMP"
 
