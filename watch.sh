@@ -26,8 +26,8 @@ cleanup() {
 # Trap Ctrl+C (SIGINT) to run cleanup()
 trap cleanup SIGINT
 
-# Capture initial frame using ffmpeg
-ffmpeg $FRAME_CAPTURE_OPTIONS "$PREV_IMG" -y -loglevel error
+# Capture initial frame using ffmpeg (suppress warnings)
+ffmpeg $FRAME_CAPTURE_OPTIONS "$PREV_IMG" -y -loglevel error 2>/dev/null
 
 if [ ! -f "$PREV_IMG" ]; then
     echo "Error: Failed to capture initial image from Desk View Camera."
@@ -35,11 +35,10 @@ if [ ! -f "$PREV_IMG" ]; then
 fi
 
 while true; do
-    # Capture new frame using ffmpeg
-    ffmpeg $FRAME_CAPTURE_OPTIONS "$CURR_IMG" -y -loglevel error
+    # Capture new frame using ffmpeg (suppress warnings)
+    ffmpeg $FRAME_CAPTURE_OPTIONS "$CURR_IMG" -y -loglevel error 2>/dev/null
 
     if [ ! -f "$CURR_IMG" ]; then
-        echo "Error: Failed to capture current image. Retrying..."
         sleep 1
         continue
     fi
@@ -57,8 +56,6 @@ while true; do
             RECORD_PID=$!  # Capture PID of recording process
         fi
     else
-        echo "No motion detected."
-
         if [ "$RECORDING" = true ]; then
             echo "Stopping recording..."
             kill "$RECORD_PID" 2>/dev/null  # Stop recording process
