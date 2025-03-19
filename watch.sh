@@ -6,8 +6,10 @@ mkdir -p "$WATCH_DIR"
 PREV_IMG="$WATCH_DIR/prev.jpg"
 CURR_IMG="$WATCH_DIR/curr.jpg"
 
-THRESHOLD=50  # Increase threshold to filter minor differences
-PERCENT_DIFF_THRESHOLD=2  # At least 2% of pixels must change significantly
+# The minimum percentage of changed pixels required to trigger a recording.
+# Increase this if you get too many false positives, decrease if detection is too slow.
+PIXEL_CHANGE_THRESHOLD=2.0  
+
 DESK_CAM_INDEX="1"  # Desk View Camera
 FRAME_CAPTURE_OPTIONS="-f avfoundation -video_size 1920x1440 -framerate 30 -pixel_format uyvy422 -i $DESK_CAM_INDEX -frames:v 1"
 
@@ -42,10 +44,12 @@ while true; do
         continue
     fi
 
-    # Compute pixel difference using ImageMagick (binary threshold to avoid minor changes)
-    DIFF_PERCENT=$(magick compare -metric PAE "$PREV_IMG" "$CURR_IMG" null: 2>&1 | awk '{print $1}')
+    # Compute pixel difference as a percentage of total image size
+    DIFF_PIXELS=$(magick compare -metric AE "$PREV_IMG" "$CURR_IMG" null: 2>&1 | awk '{print $1}')
+    TOTAL_PIXELS=$(magick identify -format "%w * %h" "$CURR_IMG" | bc)
+    DIFF_PERCENT=$(echo "scale=2; ($DIFF_PIXELS / $TOTAL_PIXELS) * 100" | bc)
 
-    if (( $(echo "$DIFF_PERCENT > $PERCENT_DIFF_THRESHOLD" | bc -l) )); then
+    if (( $(echo "$DIFF_PERCENT > $PIXEL_CHANGE_THRESHOLD" | bc -l) )); then
         TIMESTAMP=$(date +"%Y_%m_%d_%H_%M_%S")
 
         PREV_IMAGE="$WATCH_DIR/${TIMESTAMP}_trigger_prev.jpg"
