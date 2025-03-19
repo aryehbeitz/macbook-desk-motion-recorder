@@ -7,9 +7,12 @@ PREV_IMG="$WATCH_DIR/prev.jpg"
 CURR_IMG="$WATCH_DIR/curr.jpg"
 CENTER_PREV="$WATCH_DIR/prev_right.jpg"
 CENTER_CURR="$WATCH_DIR/curr_right.jpg"
-VIDEO_FILE="$WATCH_DIR/recording_$(date +%Y%m%d_%H%M%S).mov"
 
-# Take an initial snapshot
+THRESHOLD=3000  # Adjust motion sensitivity
+RECORDING=false  # Tracking recording state
+RECORD_PID=0  # Process ID of recording
+
+# Start motion detection loop
 imagesnap -q -w 1 "$PREV_IMG"
 
 while true; do
@@ -22,15 +25,23 @@ while true; do
     # Compare the cropped right-side regions
     DIFF=$(magick compare -metric RMSE "$CENTER_PREV" "$CENTER_CURR" null: 2>&1 | awk '{print $1}')
 
-    # Motion threshold (tune this value if needed)
-    THRESHOLD=3000
-
     if (( $(echo "$DIFF > $THRESHOLD" | bc -l) )); then
-        echo "Person detected on the right side! Starting recording..."
+        echo "Motion detected on the right side!"
         
-        # Use FaceTime HD Camera (usually index 0) and fix pixel format issues
-        ffmpeg -f avfoundation -framerate 30 -video_size 1280x720 -pixel_format uyvy422 -i "0" -t 30 "$VIDEO_FILE"
-        break
+        if [ "$RECORDING" = false ]; then
+            echo "Starting recording..."
+            RECORDING=true
+            ./record_video.sh &  # Start recording in the background
+            RECORD_PID=$!  # Capture PID of recording process
+        fi
+    else
+        echo "No motion detected."
+        
+        if [ "$RECORDING" = true ]; then
+            echo "Stopping recording..."
+            kill "$RECORD_PID" 2>/dev/null  # Stop recording process
+            RECORDING=false
+        fi
     fi
 
     mv "$CURR_IMG" "$PREV_IMG"
