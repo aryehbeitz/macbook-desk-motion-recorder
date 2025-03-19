@@ -2,8 +2,6 @@
 
 WATCH_DIR="$HOME/Desktop/security"
 mkdir -p "$WATCH_DIR"
-IMAGE_DIR="$WATCH_DIR/images"
-mkdir -p "$IMAGE_DIR"
 
 PREV_IMG="$WATCH_DIR/prev.jpg"
 CURR_IMG="$WATCH_DIR/curr.jpg"
@@ -43,13 +41,17 @@ while true; do
         # Generate timestamp
         TIMESTAMP=$(date +"%Y_%m_%d_%H_%M_%S")
 
+        # Define filenames so they appear alongside the video
+        PREV_IMAGE="$WATCH_DIR/trigger_prev_${TIMESTAMP}.jpg"
+        CURR_IMAGE="$WATCH_DIR/trigger_curr_${TIMESTAMP}.jpg"
+
         # Save images that triggered the motion detection
-        cp "$PREV_IMG" "$IMAGE_DIR/prev_$TIMESTAMP.jpg"
-        cp "$CURR_IMG" "$IMAGE_DIR/curr_$TIMESTAMP.jpg"
+        cp "$PREV_IMG" "$PREV_IMAGE"
+        cp "$CURR_IMG" "$CURR_IMAGE"
 
         # Start recording and disable motion detection
         ./record_video.sh "$TIMESTAMP"
-        
+
         # Wait 10 seconds after recording completes before resuming detection
         sleep 10
     fi
