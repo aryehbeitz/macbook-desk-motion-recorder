@@ -53,14 +53,15 @@ show_image() {
     local display_path="$2"
 
     # Create resized version for display and rotate to correct orientation
-    magick "$image_path" -auto-orient -resize 1024x768 "$display_path"
+    # Using smaller dimensions (480x360) to fit better in the terminal
+    magick "$image_path" -auto-orient -resize 480x360 "$display_path"
 
     if [ -n "$KITTY_WINDOW_ID" ]; then
-        # Kitty terminal - force cursor to stay
+        # Kitty terminal - force cursor to stay and set smaller size
         printf '\033_Ga=T,f=100,C=1;%s\033\\' "$(base64 -i "$display_path")"
     elif [ -n "$ITERM_PROFILE" ]; then
-        # iTerm2 - force inline display
-        printf '\033]1337;File=inline=1;preserveAspectRatio=1;inline=1:%s\a\033[1A' "$(base64 -i "$display_path")"
+        # iTerm2 - force inline display with width control
+        printf '\033]1337;File=inline=1;width=33;preserveAspectRatio=1;inline=1:%s\a\033[1A' "$(base64 -i "$display_path")"
     else
         # Fallback to ASCII art using ImageMagick
         convert "$display_path" -resize 40x30 -colorspace gray -format txt:- | \
@@ -79,8 +80,8 @@ show_all_images() {
     # Clear screen and move to top
     printf '\033[2J\033[H'
 
-    # Print labels on one line
-    printf 'Prev: \033[50C Curr: \033[50C Diff:\n'
+    # Print labels on one line with adjusted spacing
+    printf 'Prev: \033[40C Curr: \033[40C Diff:\n'
 
     # Save cursor position
     printf '\033[s'
@@ -88,16 +89,16 @@ show_all_images() {
     # Show first image
     show_image "$prev" "$PREV_DISPLAY"
 
-    # Move cursor right and show second image
-    printf '\033[u\033[50C'
+    # Move cursor right and show second image (reduced spacing)
+    printf '\033[u\033[40C'
     show_image "$curr" "$CURR_DISPLAY"
 
-    # Move cursor right and show third image
-    printf '\033[u\033[100C'
+    # Move cursor right and show third image (reduced spacing)
+    printf '\033[u\033[80C'
     show_image "$diff" "$DIFF_DISPLAY"
 
     # Move cursor down after images
-    printf '\033[10B\n'
+    printf '\033[15B\n'
 }
 
 # Function to clear terminal
