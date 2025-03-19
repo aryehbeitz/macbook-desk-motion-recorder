@@ -6,7 +6,8 @@ mkdir -p "$WATCH_DIR"
 PREV_IMG="$WATCH_DIR/prev.jpg"
 CURR_IMG="$WATCH_DIR/curr.jpg"
 
-THRESHOLD=4000  # Adjusted motion sensitivity to reduce false positives
+THRESHOLD=50  # Increase threshold to filter minor differences
+PERCENT_DIFF_THRESHOLD=2  # At least 2% of pixels must change significantly
 DESK_CAM_INDEX="1"  # Desk View Camera
 FRAME_CAPTURE_OPTIONS="-f avfoundation -video_size 1920x1440 -framerate 30 -pixel_format uyvy422 -i $DESK_CAM_INDEX -frames:v 1"
 
@@ -34,24 +35,20 @@ while true; do
         continue
     fi
 
-    # Compare full images for motion detection
-    DIFF=$(magick compare -metric RMSE "$PREV_IMG" "$CURR_IMG" null: 2>&1 | awk '{print $1}')
+    # Compute pixel difference using ImageMagick (binary threshold to avoid minor changes)
+    DIFF_PERCENT=$(magick compare -metric PAE "$PREV_IMG" "$CURR_IMG" null: 2>&1 | awk '{print $1}')
 
-    if (( $(echo "$DIFF > $THRESHOLD" | bc -l) )); then
-        # Generate timestamp (YYYY_MM_DD_HH_MM_SS format)
+    if (( $(echo "$DIFF_PERCENT > $PERCENT_DIFF_THRESHOLD" | bc -l) )); then
         TIMESTAMP=$(date +"%Y_%m_%d_%H_%M_%S")
 
-        # Save images with filenames that start with the timestamp
         PREV_IMAGE="$WATCH_DIR/${TIMESTAMP}_trigger_prev.jpg"
         CURR_IMAGE="$WATCH_DIR/${TIMESTAMP}_trigger_curr.jpg"
 
         cp "$PREV_IMG" "$PREV_IMAGE"
         cp "$CURR_IMG" "$CURR_IMAGE"
 
-        # Start recording and disable motion detection
         ./record_video.sh "$TIMESTAMP"
 
-        # Wait 10 seconds after recording completes before resuming detection
         sleep 10
     fi
 
