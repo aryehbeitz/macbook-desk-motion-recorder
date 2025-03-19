@@ -56,11 +56,11 @@ show_image() {
     magick "$image_path" -auto-orient -resize 1024x768 "$display_path"
 
     if [ -n "$KITTY_WINDOW_ID" ]; then
-        # Kitty terminal - use cursor control and force width
-        printf '\033_Ga=T,f=100,w=30,c=1;%s\033\\' "$(base64 -i "$display_path")"
+        # Kitty terminal - force cursor to stay
+        printf '\033_Ga=T,f=100,C=1;%s\033\\' "$(base64 -i "$display_path")"
     elif [ -n "$ITERM_PROFILE" ]; then
-        # iTerm2 - use inline and cursor control
-        printf '\033]1337;File=inline=1;width=30;preserveAspectRatio=1;inline=1:%s\a' "$(base64 -i "$display_path")"
+        # iTerm2 - force inline display
+        printf '\033]1337;File=inline=1;preserveAspectRatio=1;inline=1:%s\a\033[1A' "$(base64 -i "$display_path")"
     else
         # Fallback to ASCII art using ImageMagick
         convert "$display_path" -resize 40x30 -colorspace gray -format txt:- | \
@@ -76,23 +76,28 @@ show_all_images() {
     local curr="$2"
     local diff="$3"
 
-    # Clear and position cursor
-    clear_terminal
-    echo -e "\nPrev:                  Curr:                  Diff:"
+    # Clear screen and move to top
+    printf '\033[2J\033[H'
+
+    # Print labels on one line
+    printf 'Prev: \033[50C Curr: \033[50C Diff:\n'
 
     # Save cursor position
     printf '\033[s'
 
-    # Display all images without newlines, using cursor control
-    printf '\033[u'
+    # Show first image
     show_image "$prev" "$PREV_DISPLAY"
-    printf '\033[0C'  # Move cursor right
+
+    # Move cursor right and show second image
+    printf '\033[u\033[50C'
     show_image "$curr" "$CURR_DISPLAY"
-    printf '\033[0C'  # Move cursor right
+
+    # Move cursor right and show third image
+    printf '\033[u\033[100C'
     show_image "$diff" "$DIFF_DISPLAY"
 
-    # Move cursor to next line after images
-    printf '\n\n'
+    # Move cursor down after images
+    printf '\033[10B\n'
 }
 
 # Function to clear terminal
