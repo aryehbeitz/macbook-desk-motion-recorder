@@ -14,7 +14,7 @@ fi
 # Calculate end second (30s later)
 END_SECOND=$(date -j -v+30S +"%S")
 
-VIDEO_FILE="$WATCH_DIR/${TIMESTAMP}_recording-${END_SECOND}.mov"
+VIDEO_FILE="$WATCH_DIR/${TIMESTAMP}-${END_SECOND}_recording.mov"
 
 echo "[INFO] Recording started: $VIDEO_FILE"
 

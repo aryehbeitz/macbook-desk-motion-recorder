@@ -11,13 +11,15 @@ CURR_IMG="$WATCH_DIR/curr.jpg"
 # The minimum percentage of changed pixels required to trigger a recording.
 # - Too many false positives? Increase PIXEL_CHANGE_THRESHOLD (e.g., 0.6 or 1.0).
 # - Not detecting movement fast enough? Decrease it (e.g., 0.3 or 0.2).
-PIXEL_CHANGE_THRESHOLD=0.4  
+PIXEL_CHANGE_THRESHOLD=0.4
 
 DESK_CAM_INDEX="1"  # Desk View Camera
 FRAME_CAPTURE_OPTIONS="-f avfoundation -video_size 1920x1440 -framerate 30 -pixel_format uyvy422 -i $DESK_CAM_INDEX -frames:v 1"
 
 # Function to clean up on exit
 cleanup() {
+    echo "[INFO] Cleaning up temporary files..."
+    rm -f "$PREV_IMG" "$PREV_IMG_2" "$PREV_IMG_3" "$CURR_IMG"
     echo "[INFO] Stopping motion detection."
     exit 0
 }
@@ -112,7 +114,15 @@ while true; do
 
         ./record_video.sh "$TIMESTAMP"
 
-        echo "[INFO] Recording finished. Pausing detection for 10 seconds..."
+        echo "[INFO] Recording finished. Cleaning up temporary files..."
+        rm -f "$PREV_IMG" "$PREV_IMG_2" "$PREV_IMG_3" "$CURR_IMG"
+
+        # Reinitialize the image files for the next cycle
+        ffmpeg $FRAME_CAPTURE_OPTIONS "$PREV_IMG" -y -loglevel error -nostats 2>/dev/null
+        cp "$PREV_IMG" "$PREV_IMG_2"
+        cp "$PREV_IMG" "$PREV_IMG_3"
+
+        echo "[INFO] Pausing detection for 10 seconds..."
         sleep 10
     else
         echo "[INFO] No significant movement detected. Diff Level: $DIFF_PERCENT%"
@@ -122,6 +132,6 @@ while true; do
     mv "$PREV_IMG_2" "$PREV_IMG_3"
     mv "$PREV_IMG" "$PREV_IMG_2"
     mv "$CURR_IMG" "$PREV_IMG"
-    
+
     sleep 1
 done
