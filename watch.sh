@@ -9,10 +9,9 @@ PREV_IMG_3="$WATCH_DIR/prev_3.jpg"
 CURR_IMG="$WATCH_DIR/curr.jpg"
 
 # The minimum percentage of changed pixels required to trigger a recording.
-# Adjust this value based on sensitivity needs:
-# - Too many false positives? Increase PIXEL_CHANGE_THRESHOLD (e.g., 3.5 or 5.0).
-# - Not detecting movement fast enough? Decrease it (e.g., 1.0 or 0.5).
-PIXEL_CHANGE_THRESHOLD=1.5  
+# - Too many false positives? Increase PIXEL_CHANGE_THRESHOLD (e.g., 0.6 or 1.0).
+# - Not detecting movement fast enough? Decrease it (e.g., 0.3 or 0.2).
+PIXEL_CHANGE_THRESHOLD=0.4  
 
 DESK_CAM_INDEX="1"  # Desk View Camera
 FRAME_CAPTURE_OPTIONS="-f avfoundation -video_size 1920x1440 -framerate 30 -pixel_format uyvy422 -i $DESK_CAM_INDEX -frames:v 1"
