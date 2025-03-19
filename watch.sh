@@ -7,7 +7,9 @@ PREV_IMG="$WATCH_DIR/prev.jpg"
 CURR_IMG="$WATCH_DIR/curr.jpg"
 
 # The minimum percentage of changed pixels required to trigger a recording.
-# Increase this if you get too many false positives, decrease if detection is too slow.
+# Adjust this value based on sensitivity needs:
+# - Too many false positives? Increase PIXEL_CHANGE_THRESHOLD (e.g., 3.5 or 5.0).
+# - Not detecting movement fast enough? Decrease it (e.g., 1.0 or 0.5).
 PIXEL_CHANGE_THRESHOLD=2.0  
 
 DESK_CAM_INDEX="1"  # Desk View Camera
@@ -44,10 +46,23 @@ while true; do
         continue
     fi
 
-    # Compute pixel difference as a percentage of total image size
+    # Compute pixel difference using ImageMagick
     DIFF_PIXELS=$(magick compare -metric AE "$PREV_IMG" "$CURR_IMG" null: 2>&1 | awk '{print $1}')
-    TOTAL_PIXELS=$(magick identify -format "%w * %h" "$CURR_IMG" | bc)
-    DIFF_PERCENT=$(echo "scale=2; ($DIFF_PIXELS / $TOTAL_PIXELS) * 100" | bc)
+
+    # Compute total image pixels
+    WIDTH=$(magick identify -format "%w" "$CURR_IMG")
+    HEIGHT=$(magick identify -format "%h" "$CURR_IMG")
+    TOTAL_PIXELS=$((WIDTH * HEIGHT))
+
+    # Avoid division by zero
+    if [ "$TOTAL_PIXELS" -eq 0 ]; then
+        echo "[ERROR] Failed to compute image size. Skipping frame..."
+        sleep 1
+        continue
+    fi
+
+    # Compute the percentage of changed pixels
+    DIFF_PERCENT=$(awk "BEGIN { printf \"%.2f\", ($DIFF_PIXELS / $TOTAL_PIXELS) * 100 }")
 
     if (( $(echo "$DIFF_PERCENT > $PIXEL_CHANGE_THRESHOLD" | bc -l) )); then
         TIMESTAMP=$(date +"%Y_%m_%d_%H_%M_%S")
