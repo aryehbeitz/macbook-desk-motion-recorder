@@ -103,14 +103,12 @@ while true; do
     if (( $(echo "$DIFF_PERCENT > $PIXEL_CHANGE_THRESHOLD" | bc -l) )); then
         TIMESTAMP=$(date +"%Y_%m_%d_%H_%M_%S")
 
-        PREV_IMAGE="$WATCH_DIR/${TIMESTAMP}_trigger_prev.jpg"
-        CURR_IMAGE="$WATCH_DIR/${TIMESTAMP}_trigger_curr.jpg"
-
-        cp "$PREV_IMG" "$PREV_IMAGE"
-        cp "$CURR_IMG" "$CURR_IMAGE"
+        # Create a visual diff image showing what changed
+        DIFF_IMAGE="$WATCH_DIR/${TIMESTAMP}_diff.jpg"
+        magick compare "$PREV_IMG" "$CURR_IMG" -compose src -highlight-color red "$DIFF_IMAGE"
 
         echo "[ALERT] Movement detected! Diff Level: $DIFF_PERCENT%"
-        echo "[INFO] Saving trigger images: $PREV_IMAGE, $CURR_IMAGE"
+        echo "[INFO] Saving diff image: $DIFF_IMAGE"
         echo "[INFO] Starting recording..."
 
         ./record_video.sh "$TIMESTAMP"
