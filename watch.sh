@@ -56,11 +56,11 @@ show_image() {
     magick "$image_path" -auto-orient -resize 1024x768 "$display_path"
 
     if [ -n "$KITTY_WINDOW_ID" ]; then
-        # Kitty terminal - use maxsize and force width
-        printf '\033_Ga=T,f=100,w=30;%s\033\\' "$(base64 -i "$display_path")"
+        # Kitty terminal - use cursor control and force width
+        printf '\033_Ga=T,f=100,w=30,c=1;%s\033\\' "$(base64 -i "$display_path")"
     elif [ -n "$ITERM_PROFILE" ]; then
-        # iTerm2 - use width specification
-        printf '\033]1337;File=inline=1;width=30;preserveAspectRatio=1:%s\a' "$(base64 -i "$display_path")"
+        # iTerm2 - use inline and cursor control
+        printf '\033]1337;File=inline=1;width=30;preserveAspectRatio=1;inline=1:%s\a' "$(base64 -i "$display_path")"
     else
         # Fallback to ASCII art using ImageMagick
         convert "$display_path" -resize 40x30 -colorspace gray -format txt:- | \
@@ -68,6 +68,31 @@ show_image() {
             tr -d ',' | \
             awk '{printf "%c", int($1/255*93+32)}'
     fi
+}
+
+# Function to display all images on one line
+show_all_images() {
+    local prev="$1"
+    local curr="$2"
+    local diff="$3"
+
+    # Clear and position cursor
+    clear_terminal
+    echo -e "\nPrev:                  Curr:                  Diff:"
+
+    # Save cursor position
+    printf '\033[s'
+
+    # Display all images without newlines, using cursor control
+    printf '\033[u'
+    show_image "$prev" "$PREV_DISPLAY"
+    printf '\033[0C'  # Move cursor right
+    show_image "$curr" "$CURR_DISPLAY"
+    printf '\033[0C'  # Move cursor right
+    show_image "$diff" "$DIFF_DISPLAY"
+
+    # Move cursor to next line after images
+    printf '\n\n'
 }
 
 # Function to clear terminal
@@ -175,13 +200,9 @@ while true; do
         echo "[ALERT] Movement detected! Diff Level: $DIFF_PERCENT%"
         echo "[INFO] Saving diff image: $DIFF_IMAGE"
 
-        # Show the images in terminal
-        clear_terminal
-        echo -e "\nPrev:                  Curr:                  Diff:"
-        printf "%s" "$(show_image "$PREV_IMG" "$PREV_DISPLAY")"
-        printf "%s" "$(show_image "$CURR_IMG" "$CURR_DISPLAY")"
-        printf "%s\n" "$(show_image "$DIFF_IMAGE" "$DIFF_DISPLAY")"
-        echo -e "\n[INFO] Starting recording..."
+        # Show the images in terminal using the new function
+        show_all_images "$PREV_IMG" "$CURR_IMG" "$DIFF_IMAGE"
+        echo "[INFO] Starting recording..."
 
         ./record_video.sh "$TIMESTAMP"
 
