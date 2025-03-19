@@ -38,14 +38,13 @@ while true; do
     DIFF=$(magick compare -metric RMSE "$PREV_IMG" "$CURR_IMG" null: 2>&1 | awk '{print $1}')
 
     if (( $(echo "$DIFF > $THRESHOLD" | bc -l) )); then
-        # Generate timestamp
+        # Generate timestamp (YYYY_MM_DD_HH_MM_SS format)
         TIMESTAMP=$(date +"%Y_%m_%d_%H_%M_%S")
 
-        # Define filenames so they appear alongside the video
-        PREV_IMAGE="$WATCH_DIR/trigger_prev_${TIMESTAMP}.jpg"
-        CURR_IMAGE="$WATCH_DIR/trigger_curr_${TIMESTAMP}.jpg"
+        # Save images with filenames that start with the timestamp
+        PREV_IMAGE="$WATCH_DIR/${TIMESTAMP}_trigger_prev.jpg"
+        CURR_IMAGE="$WATCH_DIR/${TIMESTAMP}_trigger_curr.jpg"
 
-        # Save images that triggered the motion detection
         cp "$PREV_IMG" "$PREV_IMAGE"
         cp "$CURR_IMG" "$CURR_IMAGE"
 
