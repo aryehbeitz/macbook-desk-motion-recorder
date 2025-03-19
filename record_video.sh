@@ -5,6 +5,15 @@ mkdir -p "$WATCH_DIR"
 
 MAIN_CAM_INDEX="0"  # Main Camera
 
+# Function to clean up on exit
+cleanup() {
+    echo "Stopping recording process..."
+    exit 0
+}
+
+# Trap Ctrl+C (SIGINT) to run cleanup()
+trap cleanup SIGINT
+
 while true; do
     VIDEO_FILE="$WATCH_DIR/recording_$(date +%Y%m%d_%H%M%S).mov"
     echo "Recording video to $VIDEO_FILE"

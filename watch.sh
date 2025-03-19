@@ -9,9 +9,22 @@ CURR_IMG="$WATCH_DIR/curr.jpg"
 THRESHOLD=3000  # Motion sensitivity
 RECORDING=false  # Track recording state
 RECORD_PID=0  # Process ID of recording
-
 DESK_CAM_INDEX="1"  # Desk View Camera
+
 FRAME_CAPTURE_OPTIONS="-f avfoundation -video_size 1920x1440 -framerate 30 -pixel_format uyvy422 -i $DESK_CAM_INDEX -frames:v 1"
+
+# Function to clean up on exit
+cleanup() {
+    echo "Stopping all processes..."
+    if [ "$RECORDING" = true ]; then
+        kill "$RECORD_PID" 2>/dev/null
+    fi
+    pkill -f record_video.sh 2>/dev/null  # Ensure all recording processes are stopped
+    exit 0
+}
+
+# Trap Ctrl+C (SIGINT) to run cleanup()
+trap cleanup SIGINT
 
 # Capture initial frame using ffmpeg
 ffmpeg $FRAME_CAPTURE_OPTIONS "$PREV_IMG" -y -loglevel error
