@@ -17,18 +17,53 @@ PIXEL_CHANGE_THRESHOLD=0.4
 DESK_CAM_INDEX="1"  # Desk View Camera
 FRAME_CAPTURE_OPTIONS="-f avfoundation -video_size 1920x1440 -framerate 30 -pixel_format uyvy422 -i $DESK_CAM_INDEX -frames:v 1"
 
+# Get terminal dimensions and calculate image sizes
+get_terminal_dimensions() {
+    TERM_WIDTH=$(tput cols)
+    TERM_HEIGHT=$(tput lines)
+
+    # Calculate pixels per character (approximate)
+    CHAR_WIDTH=8   # Most terminals are roughly 8 pixels per character
+    CHAR_HEIGHT=16 # Most terminals are roughly 16 pixels per character
+
+    # Calculate available space in pixels
+    TERM_PIXELS_WIDTH=$((TERM_WIDTH * CHAR_WIDTH))
+    TERM_PIXELS_HEIGHT=$((TERM_HEIGHT * CHAR_HEIGHT))
+
+    # Use 1/3 of terminal width for each image, maintaining aspect ratio
+    IMAGE_WIDTH=$((TERM_PIXELS_WIDTH / 3))
+    IMAGE_HEIGHT=$((IMAGE_WIDTH * 3 / 4))  # 4:3 aspect ratio
+
+    echo "[DEBUG] Terminal: ${TERM_WIDTH}x${TERM_HEIGHT} chars"
+    echo "[DEBUG] Terminal: ${TERM_PIXELS_WIDTH}x${TERM_PIXELS_HEIGHT} pixels"
+    echo "[DEBUG] Images: ${IMAGE_WIDTH}x${IMAGE_HEIGHT} pixels"
+}
+
+# Initialize dimensions
+get_terminal_dimensions
+
+# Create temporary display images
+PREV_DISPLAY="$WATCH_DIR/.tmp/prev_display.jpg"
+CURR_DISPLAY="$WATCH_DIR/.tmp/curr_display.jpg"
+DIFF_DISPLAY="$WATCH_DIR/.tmp/diff_display.jpg"
+
 # Function to display images in terminal
 show_image() {
     local image_path="$1"
+    local display_path="$2"
+
+    # Create resized version for display and rotate to correct orientation
+    magick "$image_path" -auto-orient -resize 1024x768 "$display_path"
+
     if [ -n "$KITTY_WINDOW_ID" ]; then
-        # Kitty terminal
-        printf '\033_Ga=T,f=100,i=1;%s\033\\' "$(base64 -i "$image_path")"
+        # Kitty terminal - use maxsize and force width
+        printf '\033_Ga=T,f=100,w=30;%s\033\\' "$(base64 -i "$display_path")"
     elif [ -n "$ITERM_PROFILE" ]; then
-        # iTerm2
-        printf '\033]1337;File=inline=1:%s\a' "$(base64 -i "$image_path")"
+        # iTerm2 - use width specification
+        printf '\033]1337;File=inline=1;width=30;preserveAspectRatio=1:%s\a' "$(base64 -i "$display_path")"
     else
         # Fallback to ASCII art using ImageMagick
-        convert "$image_path" -resize 80x40 -colorspace gray -format txt:- | \
+        convert "$display_path" -resize 40x30 -colorspace gray -format txt:- | \
             sed -n 's/^.*(\([0-9,]*\))$/\1/p' | \
             tr -d ',' | \
             awk '{printf "%c", int($1/255*93+32)}'
@@ -130,21 +165,22 @@ while true; do
     if (( $(echo "$DIFF_PERCENT > $PIXEL_CHANGE_THRESHOLD" | bc -l) )); then
         TIMESTAMP=$(date +"%Y_%m_%d_%H_%M_%S")
 
+        # Recalculate dimensions in case terminal was resized
+        get_terminal_dimensions
+
         # Create a visual diff image showing what changed
         DIFF_IMAGE="$WATCH_DIR/${TIMESTAMP}_diff.jpg"
-        magick compare "$PREV_IMG" "$CURR_IMG" -compose src -highlight-color red "$DIFF_IMAGE"
+        magick compare -auto-orient "$PREV_IMG" "$CURR_IMG" -compose src -highlight-color red "$DIFF_IMAGE"
 
         echo "[ALERT] Movement detected! Diff Level: $DIFF_PERCENT%"
         echo "[INFO] Saving diff image: $DIFF_IMAGE"
 
         # Show the images in terminal
         clear_terminal
-        echo "Previous Frame:"
-        show_image "$PREV_IMG"
-        echo -e "\nCurrent Frame:"
-        show_image "$CURR_IMG"
-        echo -e "\nDifference (red highlights changes):"
-        show_image "$DIFF_IMAGE"
+        echo -e "\nPrev:                  Curr:                  Diff:"
+        printf "%s" "$(show_image "$PREV_IMG" "$PREV_DISPLAY")"
+        printf "%s" "$(show_image "$CURR_IMG" "$CURR_DISPLAY")"
+        printf "%s\n" "$(show_image "$DIFF_IMAGE" "$DIFF_DISPLAY")"
         echo -e "\n[INFO] Starting recording..."
 
         ./record_video.sh "$TIMESTAMP"
