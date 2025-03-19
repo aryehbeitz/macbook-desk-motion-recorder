@@ -15,8 +15,9 @@ FRAME_CAPTURE_OPTIONS="-f avfoundation -video_size 1920x1440 -framerate 30 -pixe
 
 # Function to clean up on exit
 cleanup() {
-    if [ "$RECORDING" = true ]; then
+    if [ "$RECORDING" = true ] && kill -0 "$RECORD_PID" 2>/dev/null; then
         kill "$RECORD_PID" 2>/dev/null
+        wait "$RECORD_PID" 2>/dev/null
     fi
     pkill -f record_video.sh 2>/dev/null  # Ensure all recording processes are stopped
     exit 0
@@ -52,7 +53,10 @@ while true; do
         fi
     else
         if [ "$RECORDING" = true ]; then
-            kill "$RECORD_PID" 2>/dev/null  # Stop recording process
+            if kill -0 "$RECORD_PID" 2>/dev/null; then
+                kill "$RECORD_PID" 2>/dev/null
+                wait "$RECORD_PID" 2>/dev/null
+            fi
             RECORDING=false
         fi
     fi
