@@ -54,8 +54,20 @@ while true; do
     DIFF_2=$(magick compare -metric RMSE "$PREV_IMG_2" "$CURR_IMG" null: 2>&1 | awk '{print $1}')
     DIFF_3=$(magick compare -metric RMSE "$PREV_IMG_3" "$CURR_IMG" null: 2>&1 | awk '{print $1}')
 
-    # Use the maximum difference value
-    DIFF_VALUE=$(awk "BEGIN {print ($DIFF_1 > $DIFF_2) ? (($DIFF_1 > $DIFF_3) ? $DIFF_1 : $DIFF_3) : (($DIFF_2 > $DIFF_3) ? $DIFF_2 : $DIFF_3)}")
+    # Fix for BSD AWK on macOS: Determine max difference value without nested ternary
+    if (( $(echo "$DIFF_1 > $DIFF_2" | bc -l) )); then
+        if (( $(echo "$DIFF_1 > $DIFF_3" | bc -l) )); then
+            DIFF_VALUE="$DIFF_1"
+        else
+            DIFF_VALUE="$DIFF_3"
+        fi
+    else
+        if (( $(echo "$DIFF_2 > $DIFF_3" | bc -l) )); then
+            DIFF_VALUE="$DIFF_2"
+        else
+            DIFF_VALUE="$DIFF_3"
+        fi
+    fi
 
     # Ensure DIFF_VALUE is a valid number
     if ! [[ "$DIFF_VALUE" =~ ^[0-9]+(\.[0-9]+)?$ ]]; then
