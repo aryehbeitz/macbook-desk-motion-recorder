@@ -5,10 +5,15 @@ A motion-activated recording system for macOS that uses the **Desk View Camera**
 ## **Features**
 
 ✅ Uses the **Desk View Camera** for motion detection.
+
 ✅ Records **only when significant motion is detected**.
+
 ✅ Saves **trigger images alongside the video** so you can review what caused the recording.
+
 ✅ **Pauses detection during recording** and **resumes 10 seconds after recording stops**.
+
 ✅ **Suppresses false positives** by filtering minor lighting or noise variations.
+
 ✅ **Fully automated and runs in the background**.
 
 ---
@@ -75,7 +80,9 @@ security/
 ```
 
 - `-39_recording.mov` → The recorded video (39 is the end second of the recording).
+
 - `trigger_prev.jpg` → The image just before motion was detected.
+
 - `trigger_curr.jpg` → The image when motion was detected.
 
 This ensures **videos and trigger images are ordered together** for easy review.
