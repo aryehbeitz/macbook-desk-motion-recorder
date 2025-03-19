@@ -2,11 +2,13 @@
 
 WATCH_DIR="$HOME/Desktop/security"
 mkdir -p "$WATCH_DIR"
+IMAGE_DIR="$WATCH_DIR/images"
+mkdir -p "$IMAGE_DIR"
 
 PREV_IMG="$WATCH_DIR/prev.jpg"
 CURR_IMG="$WATCH_DIR/curr.jpg"
 
-THRESHOLD=3000  # Motion sensitivity
+THRESHOLD=4000  # Increase sensitivity threshold to reduce false positives
 RECORDING=false  # Track recording state
 RECORD_PID=0  # Process ID of recording
 DESK_CAM_INDEX="1"  # Desk View Camera
@@ -47,8 +49,16 @@ while true; do
 
     if (( $(echo "$DIFF > $THRESHOLD" | bc -l) )); then
         if [ "$RECORDING" = false ]; then
+            # Generate timestamp
+            TIMESTAMP=$(date +"%Y_%m_%d_%H_%M_%S")
+
+            # Save images that triggered the motion detection
+            cp "$PREV_IMG" "$IMAGE_DIR/prev_$TIMESTAMP.jpg"
+            cp "$CURR_IMG" "$IMAGE_DIR/curr_$TIMESTAMP.jpg"
+
+            # Start recording
             RECORDING=true
-            ./record_video.sh &  # Start recording in the background
+            ./record_video.sh "$TIMESTAMP" &  # Pass timestamp for consistent file naming
             RECORD_PID=$!  # Capture PID of recording process
         fi
     else
